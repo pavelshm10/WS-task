@@ -1,16 +1,17 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.tsx
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [message, setMessage] = useState('');
 
-  return (
-    <>
-  sss123
-    </>
-  )
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/hello')
+      .then(res => setMessage(res.data.message))
+      .catch(err => console.error(err));
+  }, []);
+
+  return <h1>{message}</h1>;
 }
 
-export default App
+export default App;
