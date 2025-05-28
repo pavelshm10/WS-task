@@ -1,12 +1,19 @@
-import { configureStore } from '@reduxjs/toolkit';
-import eventsReducer from './reducers/eventsSlice';
-import connectionRducer from './reducers/connectionSlice';
-import { useDispatch, useSelector, useStore, type TypedUseSelectorHook } from 'react-redux';
+import { configureStore } from "@reduxjs/toolkit";
+import eventsReducer from "./reducers/eventsSlice";
+import connectionReducer from "./reducers/connectionSlice";
+import authReducer from "./reducers/authSlice";
+import {
+  useDispatch,
+  useSelector,
+  useStore,
+  type TypedUseSelectorHook,
+} from "react-redux";
 
 export const store = configureStore({
   reducer: {
     events: eventsReducer,
-    connection: connectionRducer
+    connection: connectionReducer,
+    auth: authReducer,
   },
 });
 

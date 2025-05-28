@@ -1,127 +1,26 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  setConnectionStatus,
-  setWebSocketActive,
-} from "./store/reducers/connectionSlice";
-import { addEvent, clearEvents } from "./store/reducers/eventsSlice";
-import { useAppDispatch, useAppSelector } from "./store";
-import { ConnectionStatus } from "./types/connection";
+import { useDispatch } from "react-redux";
+import NotificationList from "./components/NotificationList";
+import { useAppSelector } from "./store";
+import { logout } from "./store/reducers/authSlice";
+import LoginForm from "./components/LoginForm";
 
-const App: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const { status, isWebSocketActive } = useAppSelector(
-    (state) => state.connection
-  );
-  const events = useAppSelector((state) => state.events.events);
-  const ws = useRef<WebSocket | null>(null);
-  const [command, setCommand] = useState(""); // For sending commands/messages
+export const App: React.FC = () => {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
-  useEffect(() => {
-    if (!isWebSocketActive) return;
+  const dispatch = useDispatch();
 
-    dispatch(setConnectionStatus(ConnectionStatus.CONNECTING));
-    ws.current = new WebSocket("ws://localhost:4000");
-
-    ws.current.onopen = () => {
-      dispatch(setConnectionStatus(ConnectionStatus.CONNECTED));
-    };
-
-    ws.current.onclose = () => {
-      dispatch(setConnectionStatus(ConnectionStatus.DISCONNECTED));
-    };
-
-    ws.current.onerror = () => {
-      dispatch(setConnectionStatus(ConnectionStatus.DISCONNECTED));
-    };
-
-    ws.current.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        const eventText = data.event || data.message || "Unknown event";
-        const timestamp = data.timestamp || new Date().toISOString();
-
-        dispatch(addEvent({ event: eventText, timestamp }));
-      } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
-      }
-    };
-
-    return () => {
-      ws.current?.close();
-    };
-  }, [dispatch, isWebSocketActive]);
-
-  // Function to send command back to server
-  const sendCommand = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      const msg = JSON.stringify({ command }); // You can customize the command structure
-      ws.current.send(msg);
-      setCommand(""); // clear input after sending
-    } else {
-      alert("WebSocket is not connected.");
-    }
+  const handleLogout = () => {
+    dispatch(logout());
   };
 
-  const handleClearEvents = () => {
-    dispatch(clearEvents());
-  };
-
-  const handleStopWebSocket = () => {
-    dispatch(setWebSocketActive(false));
-    dispatch(setConnectionStatus(ConnectionStatus.DISCONNECTED));
-    ws.current?.close();
-  };
-
-  const handleStartWebSocket = () => {
-    dispatch(setWebSocketActive(true));
-  };
+  if (!isAuthenticated) {
+    return <LoginForm />;
+  }
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h1>
-        Status: {status === ConnectionStatus.CONNECTED && "🟢 Connected"}
-        {status === ConnectionStatus.CONNECTING && "🟡 Connecting"}
-        {status === ConnectionStatus.DISCONNECTED && "🔴 Disconnected"}
-      </h1>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div style={{ display: "flex", gap: "1rem", height: "2rem" }}>
-          {!isWebSocketActive && (
-            <button onClick={handleStartWebSocket}>Start WebSocket</button>
-          )}
-          <button onClick={handleClearEvents}>Clear Events</button>
-          <button onClick={handleStopWebSocket} disabled={!isWebSocketActive}>
-            Stop WebSocket
-          </button>
-        </div>
-        {/* Command input & send button */}
-        <div style={{ display: "flex", gap: "1rem", height: "2rem" }}>
-          <input
-            type="text"
-            className="text-input"
-            value={command}
-            placeholder="Type command or message"
-            onChange={(e) => setCommand(e.target.value)}
-            disabled={!isWebSocketActive}
-          />
-          <button
-            onClick={sendCommand}
-            disabled={!command || !isWebSocketActive}
-          >
-            Send Command
-          </button>
-        </div>
-      </div>
-
-      <ul>
-        {events.map((e, i) => (
-          <li key={i}>
-            <strong>{e.timestamp}:</strong> {e.event}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <button onClick={handleLogout}>Logout</button>
+      <NotificationList />
+    </>
   );
 };
-
-export default App;
